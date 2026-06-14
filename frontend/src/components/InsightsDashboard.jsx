@@ -1,12 +1,56 @@
 import React from 'react';
-import { Target, Car, Zap, Utensils, Info } from 'lucide-react';
+import { Target, Car, Zap, Utensils } from 'lucide-react';
 
-const InsightsDashboard = ({ data }) => {
+const InsightsDashboard = ({ data, isLoading }) => {
+  // 1. Skeleton Loading State
+  if (isLoading) {
+    return (
+      <div className="w-full max-w-2xl mx-auto animate-in fade-in duration-300">
+        <div className="bg-white rounded-3xl shadow-xl border border-green-50 overflow-hidden animate-pulse">
+          
+          {/* Skeleton Header */}
+          <div className="bg-green-100 p-8 flex flex-col items-center justify-center min-h-[200px]">
+            <div className="h-4 bg-green-200/60 rounded w-48 mb-6"></div>
+            <div className="h-16 bg-green-200/60 rounded w-64"></div>
+          </div>
+
+          <div className="p-8">
+            {/* Skeleton Breakdown */}
+            <div className="h-6 bg-gray-200 rounded w-48 mb-8"></div>
+            <div className="space-y-8">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="w-full">
+                  <div className="flex justify-between mb-2">
+                    <div className="h-4 bg-gray-200 rounded w-24"></div>
+                    <div className="h-4 bg-gray-200 rounded w-12"></div>
+                  </div>
+                  <div className="h-2.5 bg-gray-100 rounded-full w-full"></div>
+                </div>
+              ))}
+            </div>
+
+            {/* Skeleton Tips */}
+            <div className="mt-8 pt-8 border-t border-gray-100">
+              <div className="bg-green-50/50 rounded-2xl p-6 border border-green-100">
+                <div className="h-5 bg-green-200/50 rounded w-56 mb-4"></div>
+                <div className="space-y-3">
+                  <div className="h-12 bg-white/60 rounded-lg w-full"></div>
+                  <div className="h-12 bg-white/60 rounded-lg w-full"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. No Data State (Fallback, shouldn't normally render if guarded properly in App.jsx)
   if (!data) return null;
 
+  // 3. Results State
   const { total_co2_kg, category_breakdown, personalized_actionable_tip } = data;
   
-  // Calculate percentages for the simple progress bars
   const maxCategory = Math.max(
     category_breakdown.transportation,
     category_breakdown.food,
@@ -15,48 +59,43 @@ const InsightsDashboard = ({ data }) => {
   
   const getPercentage = (value) => maxCategory > 0 ? (value / maxCategory) * 100 : 0;
 
-  // Parse the tips into a list of items (robust to both newlines and inline dashes)
+  // Parse the tips into a list of items
   const tips = React.useMemo(() => {
     if (!personalized_actionable_tip) return [];
-    
-    // Split by newlines first
     let parts = personalized_actionable_tip.split('\n');
-    
-    // If it's single line but contains multiple inline dashes, split by them
     if (parts.length === 1 && (parts[0].includes(' - ') || parts[0].includes(' -'))) {
       parts = parts[0].split(/\s+-\s+/);
     }
-    
     return parts
       .map(tip => tip.replace(/^[-*\s]+/, '').trim())
       .filter(tip => tip.length > 0);
   }, [personalized_actionable_tip]);
 
   return (
-    <div className="w-full max-w-2xl mx-auto mt-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="bg-white rounded-2xl shadow-xl border border-green-100 overflow-hidden">
+    <div className="w-full max-w-2xl mx-auto animate-in slide-in-from-bottom-8 fade-in duration-700 ease-out">
+      <div className="bg-white rounded-3xl shadow-2xl shadow-green-900/10 border border-green-100 overflow-hidden">
         
         {/* Header - Total CO2 */}
-        <div className="bg-gradient-to-br from-green-500 to-green-700 p-8 text-center text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-20">
-            <Target size={120} />
+        <div className="bg-gradient-to-br from-green-500 to-green-700 p-8 md:p-10 text-center text-white relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-4 -translate-y-4">
+            <Target size={160} />
           </div>
-          <h3 className="text-green-100 font-medium tracking-wide uppercase text-sm mb-2 relative z-10">
+          <h3 className="text-green-100 font-bold tracking-widest uppercase text-xs mb-3 relative z-10">
             Estimated Daily Footprint
           </h3>
           <div className="flex items-end justify-center gap-2 relative z-10">
-            <span className="text-6xl font-black tracking-tighter">{total_co2_kg.toFixed(1)}</span>
+            <span className="text-7xl font-black tracking-tighter">{total_co2_kg.toFixed(1)}</span>
             <span className="text-2xl font-bold text-green-200 mb-2">kg CO₂</span>
           </div>
         </div>
 
-        <div className="p-8">
+        <div className="p-8 md:p-10">
           {/* Category Breakdown */}
-          <h4 className="text-gray-800 font-bold text-lg mb-6 flex items-center gap-2">
+          <h4 className="text-gray-900 font-extrabold text-xl mb-8">
             Emission Breakdown
           </h4>
           
-          <div className="space-y-6">
+          <div className="space-y-7">
             <CategoryRow 
               icon={<Car size={20} />} 
               label="Transportation" 
@@ -80,20 +119,20 @@ const InsightsDashboard = ({ data }) => {
             />
           </div>
 
-          <div className="mt-8 pt-8 border-t border-gray-100">
-            <div className="bg-green-50 rounded-xl p-6 border border-green-200 flex items-start gap-4">
-              <div className="p-2 bg-green-200 rounded-full text-green-700 shrink-0 mt-1">
-                <Target size={20} />
+          <div className="mt-10 pt-10 border-t border-gray-100">
+            <div className="bg-green-50/80 rounded-3xl p-6 border border-green-200/60 flex flex-col md:flex-row items-start gap-5">
+              <div className="p-3 bg-green-200/80 rounded-2xl text-green-700 shrink-0 mt-1 shadow-sm">
+                <Target size={24} />
               </div>
-              <div className="flex-1">
-                <h4 className="font-bold text-green-800 mb-3">Your Micro-Goals for Tomorrow</h4>
-                <ul className="space-y-2.5">
+              <div className="flex-1 w-full">
+                <h4 className="font-extrabold text-green-900 mb-4 text-lg">Your Micro-Goals for Tomorrow</h4>
+                <ul className="space-y-3">
                   {tips.map((tip, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-green-700 leading-relaxed text-sm bg-white/60 p-3 rounded-lg border border-green-100/50 shadow-sm">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-200 text-green-800 text-xs font-extrabold mt-0.5">
+                    <li key={idx} className="flex items-start gap-3 text-green-800 leading-relaxed text-sm bg-white/70 p-4 rounded-xl border border-green-100/80 shadow-sm transition-all hover:bg-white hover:shadow-md">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-white text-xs font-black shadow-sm">
                         {idx + 1}
                       </span>
-                      <span>{tip}</span>
+                      <span className="pt-0.5">{tip}</span>
                     </li>
                   ))}
                 </ul>
@@ -108,17 +147,17 @@ const InsightsDashboard = ({ data }) => {
 };
 
 const CategoryRow = ({ icon, label, value, percentage, color }) => (
-  <div className="flex flex-col gap-2">
-    <div className="flex items-center justify-between text-sm">
-      <div className="flex items-center gap-2 text-gray-700 font-medium">
+  <div className="flex flex-col gap-2.5">
+    <div className="flex items-center justify-between text-base">
+      <div className="flex items-center gap-3 text-gray-700 font-semibold">
         <span className="text-gray-400">{icon}</span>
         {label}
       </div>
-      <span className="font-bold text-gray-800">{value.toFixed(1)} kg</span>
+      <span className="font-bold text-gray-900">{value.toFixed(1)} kg</span>
     </div>
-    <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+    <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
       <div 
-        className={`h-2.5 rounded-full ${color} transition-all duration-1000 ease-out`} 
+        className={`h-3 rounded-full ${color} transition-all duration-1000 ease-out`} 
         style={{ width: `${percentage}%` }}
       ></div>
     </div>

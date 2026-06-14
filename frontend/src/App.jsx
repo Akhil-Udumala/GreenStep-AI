@@ -27,33 +27,46 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8">
-      {/* Header */}
-      <div className="max-w-2xl mx-auto mb-10 text-center">
-        <div className="inline-flex items-center justify-center p-3 bg-white rounded-2xl shadow-sm mb-6">
-          <Leaf className="text-green-500 mr-2" size={32} />
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-            GreenStep <span className="text-green-500">AI</span>
-          </h1>
-        </div>
-        <p className="text-lg text-gray-600">
-          Track your daily activities, understand your impact, and reduce your carbon footprint with AI.
-        </p>
-      </div>
+    <div className="min-h-screen py-16 px-4 sm:px-6 lg:px-8 font-sans selection:bg-green-200">
 
-      <main>
-        <LogActivityForm onSubmit={handleLogSubmit} isLoading={isLoading} />
-        
+      {/* 1. The Hero Section (Above the Fold) */}
+      <header className="max-w-3xl mx-auto text-center mb-12">
+        <div className="inline-flex items-center justify-center p-3 bg-white rounded-full shadow-sm border border-green-50 mb-8 transform hover:scale-105 transition-transform">
+          <Leaf className="text-green-600 mr-2" size={50} />
+          <span className="text-3xl font-extrabold tracking-tight text-gray-900">
+            GreenStep <span className="text-green-500">AI</span>
+          </span>
+        </div>
+        <h1 className="text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-gray-900 mb-6 leading-tight">
+          Track your daily activities, <br className="hidden md:block" />
+          understand your impact, <br className="hidden md:block" />
+          and <span className="text-green-600">reduce your carbon footprint</span> with AI.
+        </h1>
+        <p className="text-lg md:text-xl text-gray-500 font-medium">
+          Simply type in what you did today. We handle the math.
+        </p>
+      </header>
+
+      {/* 2. The Interactive Core (The Hook) */}
+      <main className="max-w-3xl mx-auto flex flex-col items-center">
+        <section className="w-full relative z-10" aria-label="Log Daily Activity">
+          <LogActivityForm onSubmit={handleLogSubmit} isLoading={isLoading} />
+        </section>
+
         {error && (
-          <div className="max-w-2xl mx-auto mt-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-            <p className="text-red-700">{error}</p>
+          <div className="w-full max-w-2xl mt-6 bg-red-50 border border-red-200 text-red-600 p-4 rounded-xl text-center">
+            {error}
           </div>
         )}
 
-        {insightsData && !isLoading && (
-          <InsightsDashboard data={insightsData} />
-        )}
+        {/* 3 & 4. The Dynamic Results (Scroll/Reveal) and Actionable Takeaways */}
+        <section className="w-full mt-6 relative z-0" aria-label="Carbon Footprint Results">
+          {(isLoading || insightsData) && (
+            <InsightsDashboard data={insightsData} isLoading={isLoading} />
+          )}
+        </section>
       </main>
+
     </div>
   );
 }
