@@ -1,5 +1,4 @@
 import os
-import json
 from google import genai
 from google.genai import types
 # pyrefly: ignore [missing-import]
@@ -7,6 +6,18 @@ from dotenv import load_dotenv
 from models import AnalyzeData
 
 load_dotenv()
+
+# Initialize client once at module load time — avoids re-creating on every request
+_api_key = os.getenv("GEMINI_API_KEY")
+if not _api_key:
+    raise RuntimeError("GEMINI_API_KEY environment variable not set")
+
+_client = genai.Client(api_key=_api_key)
+_GENERATE_CONFIG = types.GenerateContentConfig(
+    system_instruction=None,  # set per-call below
+    temperature=0.0,
+    response_mime_type="application/json",
+)
 
 SYSTEM_PROMPT = """You are an expert environmental data analyst specializing in carbon accounting. Your task is to analyze the user's natural language description of their daily activities, estimate their carbon footprint, and provide strategic reduction goals.
 
@@ -23,7 +34,7 @@ CRITICAL PRIORITY RULE FOR THE MICRO-GOALS (PROPORTIONAL LENGTH):
     * MEDIUM emitting category (if applicable): Write a moderately sized, 1-2 sentence bullet point with a practical swap or tip.
     * LOWEST emitting category: Write a very brief, single-phrase or short single-sentence tip (a quick win).
 - Format this list into a single string using newline characters and dashes (e.g., "- First long tip\n- Second short tip").
-- Do NOT generate a bullet point or tip for any category that calculates to 0.0 kg. Only address the categories explicitly logged by the user.
+- STRICT 0.0 KG EXCLUSION FILTER: Do NOT generate a bullet point, tip, or praise for any category that calculates to exactly 0.0 kg. If a category is 0.0 kg, act as if it does not exist for the micro-goals.
 
 FORMAT RESTRICTION:
 - You must respond ONLY with a raw, valid JSON object. 
@@ -41,28 +52,28 @@ JSON SCHEMA:
 }"""
 
 async def analyze_activity(user_input: str) -> AnalyzeData:
-    """Analyzes the user activity and returns the estimated CO2 breakdown."""
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        raise ValueError("GEMINI_API_KEY environment variable not set")
-
-    client = genai.Client(api_key=api_key)
+    """Analyzes the user activity and returns the estimated CO2 breakdown.
     
-    # We use generate_content_async to not block
-    response = await client.aio.models.generate_content(
+    Uses the shared async Gemini client initialized at module load time for
+    maximum performance — no per-request client instantiation overhead.
+    """
+    response = await _client.aio.models.generate_content(
         model='gemini-3.1-flash-lite',
         contents=user_input,
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
             temperature=0.0,  # Enforces deterministic math calculations
             response_mime_type="application/json",
-            # We enforce structure using response_schema
-            response_schema=AnalyzeData.model_json_schema()
+            response_schema=AnalyzeData.model_json_schema(),
         ),
     )
-    
-    # Parse the response text as JSON
+
+    # The SDK returns structured data when response_schema is set.
+    # Fall back to manual parsing only if needed.
     try:
+        if response.parsed:
+            return AnalyzeData(**response.parsed)
+        import json
         data_dict = json.loads(response.text)
         return AnalyzeData(**data_dict)
     except Exception as e:

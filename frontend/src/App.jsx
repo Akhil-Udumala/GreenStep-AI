@@ -1,13 +1,43 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import LogActivityForm from './components/LogActivityForm';
 import InsightsDashboard from './components/InsightsDashboard';
 import { analyzeActivity } from './api/analyze';
 import { Leaf } from 'lucide-react';
 
+const slowSmoothScrollTo = (element, duration = 1200) => {
+  if (!element) return;
+  const targetPosition = element.getBoundingClientRect().top + window.pageYOffset - 48; // offset matching scroll-mt-12
+  const startPosition = window.pageYOffset;
+  const distance = targetPosition - startPosition;
+  let startTime = null;
+
+  const easeInOutQuad = (t, b, c, d) => {
+    t /= d / 2;
+    if (t < 1) return (c / 2) * t * t + b;
+    t--;
+    return (-c / 2) * (t * (t - 2) - 1) + b;
+  };
+
+  const animation = (currentTime) => {
+    if (startTime === null) startTime = currentTime;
+    const timeElapsed = currentTime - startTime;
+    const run = easeInOutQuad(timeElapsed, startPosition, distance, duration);
+    window.scrollTo(0, run);
+    if (timeElapsed < duration) {
+      requestAnimationFrame(animation);
+    } else {
+      window.scrollTo(0, targetPosition);
+    }
+  };
+
+  requestAnimationFrame(animation);
+};
+
 function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [insightsData, setInsightsData] = useState(null);
   const [error, setError] = useState(null);
+  const resultsRef = useRef(null);
 
   const handleLogSubmit = useCallback(async (input) => {
     setIsLoading(true);
@@ -20,9 +50,17 @@ function App() {
         throw new Error("Invalid response format from server.");
       }
     } catch (err) {
+      // Silently ignore aborted requests (user re-submitted before previous finished)
+      if (err.name === 'AbortError') return;
       setError(err.message || "An unexpected error occurred.");
     } finally {
       setIsLoading(false);
+      // Wait for React to finish rendering the results component
+      setTimeout(() => {
+        if (resultsRef.current) {
+          slowSmoothScrollTo(resultsRef.current, 1200);
+        }
+      }, 100);
     }
   }, []);
 
@@ -60,7 +98,7 @@ function App() {
         )}
 
         {/* 3 & 4. The Dynamic Results (Scroll/Reveal) and Actionable Takeaways */}
-        <section className="w-full mt-6 relative z-0" aria-label="Carbon Footprint Results">
+        <section ref={resultsRef} className="w-full mt-6 relative z-0 scroll-mt-12" aria-label="Carbon Footprint Results">
           {(isLoading || insightsData) && (
             <InsightsDashboard data={insightsData} isLoading={isLoading} />
           )}
