@@ -68,8 +68,7 @@ async def analyze_activity(user_input: str) -> AnalyzeData:
         ),
     )
 
-    # The SDK returns structured data when response_schema is set.
-    # Fall back to manual parsing only if needed.
+
     try:
         if response.parsed:
             return AnalyzeData(**response.parsed)
