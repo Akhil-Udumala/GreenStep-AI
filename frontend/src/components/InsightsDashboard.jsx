@@ -59,17 +59,42 @@ const InsightsDashboard = ({ data, isLoading }) => {
   
   const getPercentage = (value) => maxCategory > 0 ? (value / maxCategory) * 100 : 0;
 
-  // Parse the tips into a list of items
-  const tips = React.useMemo(() => {
-    if (!personalized_actionable_tip) return [];
-    let parts = personalized_actionable_tip.split('\n');
-    if (parts.length === 1 && (parts[0].includes(' - ') || parts[0].includes(' -'))) {
-      parts = parts[0].split(/\s+-\s+/);
+  // Local state for interactive tasks
+  const [tasks, setTasks] = React.useState([]);
+
+  React.useEffect(() => {
+    if (!personalized_actionable_tip) {
+      setTasks([]);
+      return;
     }
-    return parts
-      .map(tip => tip.replace(/^[-*\s]+/, '').trim())
-      .filter(tip => tip.length > 0);
+    const lines = personalized_actionable_tip.split('\n');
+    const parsed = lines
+      .map(line => {
+        // Clean leading dashes, asterisks, and whitespaces
+        let cleaned = line.replace(/^[-*\s]+/, '');
+        // Clean trailing dashes, asterisks, and whitespaces
+        cleaned = cleaned.replace(/[-*\s]+$/, '');
+        return cleaned.trim();
+      })
+      .filter(text => text.length > 0)
+      .map((text, idx) => ({
+        id: `${idx}-${text}`,
+        text,
+        completed: false,
+      }));
+    setTasks(parsed);
   }, [personalized_actionable_tip]);
+
+  const handleToggleTask = (id) => {
+    setTasks(prevTasks =>
+      prevTasks.map(task =>
+        task.id === id ? { ...task, completed: !task.completed } : task
+      )
+    );
+  };
+
+  const totalCount = tasks.length;
+  const completedCount = tasks.filter(t => t.completed).length;
 
   return (
     <div className="w-full max-w-2xl mx-auto animate-in slide-in-from-bottom-8 fade-in duration-700 ease-out">
@@ -125,15 +150,32 @@ const InsightsDashboard = ({ data, isLoading }) => {
                 <Target size={24} />
               </div>
               <div className="flex-1 w-full">
-                <h4 className="font-extrabold text-green-900 mb-4 text-lg">Your Micro-Goals for Tomorrow</h4>
-                <ul className="space-y-3">
-                  {tips.map((tip, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-green-800 leading-relaxed text-sm bg-white/70 p-4 rounded-xl border border-green-100/80 shadow-sm transition-all hover:bg-white hover:shadow-md">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-green-600 text-white text-xs font-black shadow-sm">
-                        {idx + 1}
-                      </span>
-                      <span className="pt-0.5">{tip}</span>
-                    </li>
+                <div className="mb-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                    <h4 className="font-extrabold text-green-900 text-lg">Your Micro-Goals for Tomorrow</h4>
+                    <span 
+                      className="text-xs font-extrabold bg-green-200 text-green-800 px-3 py-1 rounded-full shadow-xs select-none"
+                      aria-live="polite"
+                    >
+                      {completedCount} of {totalCount} completed
+                    </span>
+                  </div>
+                  {totalCount > 0 && (
+                    <div className="w-full bg-green-200/40 rounded-full h-1.5 overflow-hidden">
+                      <div 
+                        className="bg-green-700 h-1.5 rounded-full transition-all duration-500 ease-out" 
+                        style={{ width: `${(completedCount / totalCount) * 100}%` }}
+                      ></div>
+                    </div>
+                  )}
+                </div>
+                <ul className="space-y-3" aria-label="Micro-Goals checklist">
+                  {tasks.map((task) => (
+                    <ChecklistRow 
+                      key={task.id} 
+                      task={task} 
+                      onToggle={() => handleToggleTask(task.id)} 
+                    />
                   ))}
                 </ul>
               </div>
@@ -143,6 +185,66 @@ const InsightsDashboard = ({ data, isLoading }) => {
 
       </div>
     </div>
+  );
+};
+
+const ChecklistRow = ({ task, onToggle }) => {
+  const handleKeyDown = (e) => {
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      onToggle();
+    }
+  };
+
+  return (
+    <li 
+      onClick={onToggle}
+      onKeyDown={handleKeyDown}
+      tabIndex={0}
+      role="checkbox"
+      aria-checked={task.completed}
+      className={`flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2
+        ${task.completed 
+          ? 'bg-green-100/30 border-green-200/40 opacity-70' 
+          : 'bg-white border-green-100/80 hover:bg-green-50/20 hover:border-green-200/50 hover:shadow-md'
+        }
+      `}
+    >
+      <div className="flex items-center justify-center shrink-0 mt-0.5">
+        <div 
+          className={`h-5 w-5 rounded-md border flex items-center justify-center transition-all
+            ${task.completed 
+              ? 'bg-green-700 border-green-700 text-white shadow-xs' 
+              : 'border-green-700/60 bg-white hover:border-green-700'
+            }
+          `}
+        >
+          {task.completed && (
+            <svg 
+              className="h-3 w-3 text-white" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor"
+              strokeWidth={4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          )}
+        </div>
+      </div>
+      <span 
+        className={`text-sm leading-relaxed transition-all
+          ${task.completed 
+            ? 'line-through text-green-700/80 font-medium' 
+            : 'text-green-800'
+          }
+        `}
+      >
+        {task.text}
+      </span>
+    </li>
   );
 };
 
