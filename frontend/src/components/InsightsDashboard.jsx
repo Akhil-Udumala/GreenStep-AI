@@ -151,13 +151,21 @@ const InsightsDashboard = ({ data, isLoading }) => {
               </div>
               <div className="flex-1 w-full">
                 <div className="mb-6">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                    <h4 className="font-extrabold text-green-900 text-lg">Your Micro-Goals for Tomorrow</h4>
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
+                    <h4 className="font-extrabold text-green-900 text-lg shrink-0">Your Micro-Goals for Tomorrow</h4>
                     <span 
-                      className="text-xs font-extrabold bg-green-200 text-green-800 px-3 py-1 rounded-full shadow-xs select-none"
+                      className={`text-xs font-extrabold px-3.5 py-1.5 rounded-xl select-none transition-all duration-300 shadow-xs leading-normal
+                        ${completedCount === totalCount && totalCount > 0
+                          ? 'bg-green-700 text-white ring-4 ring-green-600/20 animate-in zoom-in-95 duration-300'
+                          : 'bg-green-200/80 text-green-800'
+                        }
+                      `}
                       aria-live="polite"
                     >
-                      {completedCount} of {totalCount} completed
+                      {completedCount === totalCount && totalCount > 0
+                        ? `${completedCount}/${totalCount} Steps Completed! 🎉 Excellent job reducing your footprint today!`
+                        : `${completedCount}/${totalCount} Steps Completed`
+                      }
                     </span>
                   </div>
                   {totalCount > 0 && (
