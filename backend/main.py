@@ -7,7 +7,8 @@ app = FastAPI(title="GreenStep AI Backend")
 
 origins = [
     "http://localhost:3000",
-    "https://green-step-ai-sigma.vercel.app/", 
+    "https://green-step-ai-sigma.vercel.app/",
+    "https://green-step-ai-two.vercel.app/",
 ]
 
 app.add_middleware(
