@@ -27,7 +27,8 @@ def test_analyze_endpoint_success(mock_analyze):
             food=1.5,
             energy=0.9
         ),
-        personalized_actionable_tip="Take the bus tomorrow."
+        suggestions=["Consider using public transit to lower your emissions."],
+        todo_list=["Take the bus to work tomorrow."]
     )
     mock_analyze.return_value = mock_data
     

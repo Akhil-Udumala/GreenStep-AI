@@ -49,7 +49,7 @@ const InsightsDashboard = ({ data, isLoading }) => {
   if (!data) return null;
 
   // 3. Results State
-  const { total_co2_kg, category_breakdown, personalized_actionable_tip } = data;
+  const { total_co2_kg, category_breakdown, suggestions = [], todo_list = [] } = data;
   
   const maxCategory = Math.max(
     category_breakdown.transportation,
@@ -63,12 +63,11 @@ const InsightsDashboard = ({ data, isLoading }) => {
   const [tasks, setTasks] = React.useState([]);
 
   React.useEffect(() => {
-    if (!personalized_actionable_tip) {
+    if (!todo_list || todo_list.length === 0) {
       setTasks([]);
       return;
     }
-    const lines = personalized_actionable_tip.split('\n');
-    const parsed = lines
+    const parsed = todo_list
       .map(line => {
         // Clean leading dashes, asterisks, and whitespaces
         let cleaned = line.replace(/^[-*\s]+/, '');
@@ -83,7 +82,7 @@ const InsightsDashboard = ({ data, isLoading }) => {
         completed: false,
       }));
     setTasks(parsed);
-  }, [personalized_actionable_tip]);
+  }, [todo_list]);
 
   const handleToggleTask = (id) => {
     setTasks(prevTasks =>
@@ -153,12 +152,12 @@ const InsightsDashboard = ({ data, isLoading }) => {
               <div className="flex-1 w-full">
                 <h4 className="font-extrabold text-amber-900 mb-4 text-lg">AI Insights & Suggestions</h4>
                 <ul className="space-y-3">
-                  {tasks.map((task, idx) => (
-                    <li key={task.id} className="flex items-start gap-3 text-amber-900 leading-relaxed text-sm bg-white/80 p-4 rounded-xl border border-amber-100/50 shadow-xs">
+                  {suggestions.map((suggestion, idx) => (
+                    <li key={idx} className="flex items-start gap-3 text-amber-900 leading-relaxed text-sm bg-white/80 p-4 rounded-xl border border-amber-100/50 shadow-xs">
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-600 text-white text-xs font-black shadow-xs">
                         {idx + 1}
                       </span>
-                      <span className="pt-0.5">{task.text}</span>
+                      <span className="pt-0.5">{suggestion}</span>
                     </li>
                   ))}
                 </ul>
