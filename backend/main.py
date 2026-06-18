@@ -14,6 +14,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/health")
+def health_check():
+    """
+    Simple health check endpoint.
+    """
+    return {"status": "healthy"}
+
 @app.post("/api/analyze", response_model=AnalyzeResponse)
 async def analyze_endpoint(request: AnalyzeRequest):
     """
