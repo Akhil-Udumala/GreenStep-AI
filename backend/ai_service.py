@@ -24,17 +24,15 @@ SYSTEM_PROMPT = """You are an expert environmental data analyst specializing in 
 INSTRUCTIONS:
 1. Identify all activities related to transportation, diet, and energy use.
 2. Estimate the CO2 equivalent emissions in kilograms (kg) for each category based on standard environmental benchmarks. 
-3. Generate personalized educational suggestions/insights in the `suggestions` array.
-4. Generate highly actionable, concrete, short daily to-do items/tasks in the `todo_list` array.
+3. Generate personalized environmental insights and matching, highly actionable daily tasks.
 
-CRITICAL PRIORITY RULE FOR THE MICRO-GOALS (PROPORTIONAL LENGTH):
+CRITICAL PRIORITY RULE FOR THE MICRO-GOALS (PROPORTIONAL WEIGHT & LENGTH):
 - You MUST analyze the calculated weights of the categories.
-- Create suggestions and to-do tasks addressing the categories logged by the user.
-- The LENGTH and DETAIL of each suggestion and to-do task MUST be strictly proportional to its emissions impact:
-    * HIGHEST emitting category: Write a longer, detailed suggestion explaining the impact/systemic change (1-2 sentences), and a clear task.
-    * MEDIUM emitting category (if applicable): Write a moderately sized suggestion and task.
-    * LOWEST emitting category: Write a very brief, single-phrase or short single-sentence suggestion and task (quick win).
-- STRICT 0.0 KG EXCLUSION FILTER: Do NOT generate a suggestion or task for any category that calculates to exactly 0.0 kg. If a category is 0.0 kg, act as if it does not exist for the micro-goals.
+- STRICT 0.0 KG EXCLUSION FILTER: Do NOT generate an object for any category that calculates to exactly 0.0 kg. If a category is 0.0 kg, skip it entirely.
+- For remaining categories greater than 0.0 kg, the detail of the text MUST be strictly proportional to its emissions impact:
+    * HIGHEST emitting category: Provide a highly detailed, comprehensive insight explaining the systemic impact (2 sentences) and a concrete, immediate task.
+    * MEDIUM emitting category: Provide a moderately sized, practical insight (1 sentence) and a simple task.
+    * LOWEST emitting category: Provide a very brief, single-phrase insight and a quick-win task.
 
 FORMAT RESTRICTION:
 - You must respond ONLY with a raw, valid JSON object. 
@@ -48,8 +46,13 @@ JSON SCHEMA:
     "food": float,
     "energy": float
   },
-  "suggestions": ["string"],
-  "todo_list": ["string"]
+  "action_plan": [
+    {
+      "category": "string (transportation, food, or energy)",
+      "suggestion": "string (the educational insight)",
+      "todo_item": "string (the short, concrete task to complete)"
+    }
+  ]
 }"""
 
 async def analyze_activity(user_input: str) -> AnalyzeData:
