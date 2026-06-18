@@ -1,5 +1,5 @@
 import React from 'react';
-import { Target, Car, Zap, Utensils } from 'lucide-react';
+import { Target, Car, Zap, Utensils, Lightbulb, ClipboardList } from 'lucide-react';
 
 const InsightsDashboard = ({ data, isLoading }) => {
   // 1. Skeleton Loading State
@@ -144,15 +144,38 @@ const InsightsDashboard = ({ data, isLoading }) => {
             />
           </div>
 
+          {/* AI Suggestions Section */}
           <div className="mt-10 pt-10 border-t border-gray-100">
+            <div className="bg-amber-50/60 rounded-3xl p-6 border border-amber-200/50 flex flex-col md:flex-row items-start gap-5">
+              <div className="p-3 bg-amber-100 text-amber-700 shrink-0 mt-1 shadow-sm rounded-2xl">
+                <Lightbulb size={24} />
+              </div>
+              <div className="flex-1 w-full">
+                <h4 className="font-extrabold text-amber-900 mb-4 text-lg">AI Insights & Suggestions</h4>
+                <ul className="space-y-3">
+                  {tasks.map((task, idx) => (
+                    <li key={task.id} className="flex items-start gap-3 text-amber-900 leading-relaxed text-sm bg-white/80 p-4 rounded-xl border border-amber-100/50 shadow-xs">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-600 text-white text-xs font-black shadow-xs">
+                        {idx + 1}
+                      </span>
+                      <span className="pt-0.5">{task.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive To-Do List Section */}
+          <div className="mt-8 pt-8 border-t border-gray-100">
             <div className="bg-green-50/80 rounded-3xl p-6 border border-green-200/60 flex flex-col md:flex-row items-start gap-5">
               <div className="p-3 bg-green-200/80 rounded-2xl text-green-700 shrink-0 mt-1 shadow-sm">
-                <Target size={24} />
+                <ClipboardList size={24} />
               </div>
               <div className="flex-1 w-full">
                 <div className="mb-6">
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
-                    <h4 className="font-extrabold text-green-900 text-lg shrink-0">Your Micro-Goals for Tomorrow</h4>
+                    <h4 className="font-extrabold text-green-900 text-lg shrink-0">Your Interactive To-Do List</h4>
                     <span 
                       className={`text-xs font-extrabold px-3.5 py-1.5 rounded-xl select-none transition-all duration-300 shadow-xs leading-normal
                         ${completedCount === totalCount && totalCount > 0
