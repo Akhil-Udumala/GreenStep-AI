@@ -21,6 +21,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.get("/")
+def read_root():
+    """
+    Root endpoint returning welcome message.
+    """
+    return {"message": "GreenStep AI API is running"}
+
 @app.get("/health")
 def health_check():
     """
