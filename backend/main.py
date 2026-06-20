@@ -69,6 +69,17 @@ def health_check():
     return {"status": "healthy"}
 
 
+@app.get("/api/analyze")
+def analyze_endpoint_info():
+    """Information endpoint for GET requests on /api/analyze.
+    
+    Returns a friendly message clarifying that this route requires a POST request.
+    """
+    return {
+        "message": "To analyze activity, please send a POST request containing a JSON body with the 'user_input' key."
+    }
+
+
 @app.post("/api/analyze", response_model=AnalyzeResponse)
 @limiter.limit("10/minute")
 async def analyze_endpoint(request: Request, body: AnalyzeRequest):

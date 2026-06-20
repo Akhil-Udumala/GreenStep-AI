@@ -93,3 +93,10 @@ def test_analyze_endpoint_ai_failure_returns_500(mock_analyze, client):
     assert response.status_code == 500
     # Internal error message must NOT be exposed
     assert "Gemini" not in response.json().get("detail", "")
+
+
+def test_analyze_endpoint_get(client):
+    """GET /api/analyze should return a friendly response informing user to use POST."""
+    response = client.get("/api/analyze")
+    assert response.status_code == 200
+    assert "POST" in response.json()["message"]
