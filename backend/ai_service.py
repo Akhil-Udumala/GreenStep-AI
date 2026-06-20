@@ -71,7 +71,7 @@ JSON SCHEMA:
 _MAX_OUTPUT_TOKENS = 1024
 
 # Single model — confirmed working in production
-_MODEL = "gemini-3.5-flash"
+_MODEL = "gemini-3.1-flash-lite"
 
 
 async def analyze_activity(user_input: str) -> AnalyzeData:
@@ -111,22 +111,7 @@ async def analyze_activity(user_input: str) -> AnalyzeData:
     try:
         if response.parsed:
             return AnalyzeData.model_validate(response.parsed)
-            
-        raw_text = response.text.strip()
-        try:
-            data_dict = json.loads(raw_text)
-        except json.JSONDecodeError:
-            cleaned_text = raw_text
-            if cleaned_text.startswith("```"):
-                # Remove opening line (e.g., ```json or ```)
-                cleaned_text = "\n".join(cleaned_text.split("\n")[1:])
-            if cleaned_text.endswith("```"):
-                # Remove closing backticks
-                cleaned_text = cleaned_text.rsplit("```", 1)[0]
-            
-            cleaned_text = cleaned_text.strip()
-            data_dict = json.loads(cleaned_text)
-
+        data_dict = json.loads(response.text)
         return AnalyzeData(**data_dict)
     except Exception as e:
         raise RuntimeError(
