@@ -1,24 +1,36 @@
+"""
+AI service module for GreenStep AI.
+
+Manages the Gemini API client lifecycle and provides the core
+`analyze_activity` coroutine used by the FastAPI endpoint.
+The client is initialized once at module load time to avoid
+per-request overhead.
+"""
+
+import json
 import os
+
+# pyrefly: ignore[missing-import]
+from dotenv import load_dotenv
 from google import genai
 from google.genai import types
-# pyrefly: ignore [missing-import]
-from dotenv import load_dotenv
+
 from models import AnalyzeData
 
 load_dotenv()
 
-# Initialize client once at module load time — avoids re-creating on every request
+# ---------------------------------------------------------------------------
+# Client & configuration — initialized once at module load time
+# ---------------------------------------------------------------------------
 _api_key = os.getenv("GEMINI_API_KEY")
 if not _api_key:
     raise RuntimeError("GEMINI_API_KEY environment variable not set")
 
 _client = genai.Client(api_key=_api_key)
-_GENERATE_CONFIG = types.GenerateContentConfig(
-    system_instruction=None,  # set per-call below
-    temperature=0.0,
-    response_mime_type="application/json",
-)
 
+# ---------------------------------------------------------------------------
+# System prompt
+# ---------------------------------------------------------------------------
 SYSTEM_PROMPT = """You are an expert environmental data analyst specializing in carbon accounting. Your task is to analyze the user's natural language description of their daily activities, estimate their carbon footprint, and provide strategic reduction goals.
 
 INSTRUCTIONS:
@@ -55,29 +67,48 @@ JSON SCHEMA:
   ]
 }"""
 
+# Maximum tokens to prevent runaway API responses
+_MAX_OUTPUT_TOKENS = 1024
+
+
 async def analyze_activity(user_input: str) -> AnalyzeData:
-    """Analyzes the user activity and returns the estimated CO2 breakdown.
-    
+    """Analyze the user's daily activity and return an estimated CO2 breakdown.
+
     Uses the shared async Gemini client initialized at module load time for
     maximum performance — no per-request client instantiation overhead.
+
+    Args:
+        user_input: A plain-text description of the user's daily activities.
+
+    Returns:
+        An ``AnalyzeData`` instance containing the total CO2 estimate,
+        per-category breakdown, educational suggestions, and a to-do list.
+
+    Raises:
+        ValueError: If ``user_input`` is empty after stripping whitespace.
+        RuntimeError: If the Gemini response cannot be parsed into the expected schema.
     """
+    if not user_input or not user_input.strip():
+        raise ValueError("user_input must not be empty.")
+
     response = await _client.aio.models.generate_content(
-        model='gemini-3.1-flash-lite',
+        model="gemini-2.0-flash-lite",
         contents=user_input,
         config=types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
             temperature=0.0,  # Enforces deterministic math calculations
             response_mime_type="application/json",
             response_schema=AnalyzeData.model_json_schema(),
+            max_output_tokens=_MAX_OUTPUT_TOKENS,
         ),
     )
 
-
     try:
         if response.parsed:
-            return AnalyzeData(**response.parsed)
-        import json
+            return AnalyzeData.model_validate(response.parsed)
         data_dict = json.loads(response.text)
         return AnalyzeData(**data_dict)
     except Exception as e:
-        raise RuntimeError(f"Failed to parse Gemini response: {response.text}") from e
+        raise RuntimeError(
+            f"Failed to parse Gemini response: {response.text}"
+        ) from e

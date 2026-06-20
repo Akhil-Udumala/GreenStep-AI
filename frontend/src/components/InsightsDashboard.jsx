@@ -1,8 +1,53 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { Target, Car, Zap, Utensils, Lightbulb, ClipboardList } from 'lucide-react';
 
+// ---------------------------------------------------------------------------
+// InsightsDashboard
+// ---------------------------------------------------------------------------
+
 const InsightsDashboard = ({ data, isLoading }) => {
-  // 1. Skeleton Loading State
+  // ---------------------------------------------------------------------------
+  // All hooks declared unconditionally at the top — React Rules of Hooks
+  // ---------------------------------------------------------------------------
+
+  // Local state for the interactive to-do checklist
+  const [tasks, setTasks] = useState([]);
+
+  // Derive todo_list safely before the conditional returns
+  const todoList = data?.todo_list ?? [];
+
+  useEffect(() => {
+    if (!todoList || todoList.length === 0) {
+      setTasks([]);
+      return;
+    }
+    const parsed = todoList
+      .map((line) => {
+        // Strip leading/trailing markdown bullet characters and whitespace
+        const cleaned = line.replace(/^[-*\s]+/, '').replace(/[-*\s]+$/, '').trim();
+        return cleaned;
+      })
+      .filter((text) => text.length > 0)
+      .map((text, idx) => ({ id: `${idx}-${text}`, text, completed: false }));
+    setTasks(parsed);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  const handleToggleTask = (id) => {
+    setTasks((prev) =>
+      prev.map((task) => (task.id === id ? { ...task, completed: !task.completed } : task))
+    );
+  };
+
+  const totalCount = tasks.length;
+  const completedCount = tasks.filter((t) => t.completed).length;
+
+  // ---------------------------------------------------------------------------
+  // Conditional renders — only after all hooks
+  // ---------------------------------------------------------------------------
+
+  // 1. Skeleton loading state
   if (isLoading) {
     return (
       <div className="w-full max-w-2xl mx-auto animate-in fade-in duration-300">
@@ -45,63 +90,34 @@ const InsightsDashboard = ({ data, isLoading }) => {
     );
   }
 
-  // 2. No Data State (Fallback, shouldn't normally render if guarded properly in App.jsx)
+  // 2. No data fallback
   if (!data) return null;
 
-  // 3. Results State
-  const { total_co2_kg, category_breakdown, suggestions = [], todo_list = [] } = data;
+  // 3. Results
+  const { total_co2_kg, category_breakdown, suggestions = [] } = data;
 
   const maxCategory = Math.max(
     category_breakdown.transportation,
     category_breakdown.food,
-    category_breakdown.energy
+    category_breakdown.energy,
+    0
   );
 
-  const getPercentage = (value) => maxCategory > 0 ? (value / maxCategory) * 100 : 0;
+  const getPercentage = (value) => (maxCategory > 0 ? (value / maxCategory) * 100 : 0);
 
-  // Local state for interactive tasks
-  const [tasks, setTasks] = React.useState([]);
-
-  React.useEffect(() => {
-    if (!todo_list || todo_list.length === 0) {
-      setTasks([]);
-      return;
-    }
-    const parsed = todo_list
-      .map(line => {
-        // Clean leading dashes, asterisks, and whitespaces
-        let cleaned = line.replace(/^[-*\s]+/, '');
-        // Clean trailing dashes, asterisks, and whitespaces
-        cleaned = cleaned.replace(/[-*\s]+$/, '');
-        return cleaned.trim();
-      })
-      .filter(text => text.length > 0)
-      .map((text, idx) => ({
-        id: `${idx}-${text}`,
-        text,
-        completed: false,
-      }));
-    setTasks(parsed);
-  }, [todo_list]);
-
-  const handleToggleTask = (id) => {
-    setTasks(prevTasks =>
-      prevTasks.map(task =>
-        task.id === id ? { ...task, completed: !task.completed } : task
-      )
-    );
-  };
-
-  const totalCount = tasks.length;
-  const completedCount = tasks.filter(t => t.completed).length;
+  const progressPercent =
+    totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
     <div className="w-full max-w-2xl mx-auto animate-in slide-in-from-bottom-8 fade-in duration-700 ease-out">
       <div className="bg-white rounded-3xl shadow-2xl shadow-green-900/10 border border-green-100 overflow-hidden">
 
-        {/* Header - Total CO2 */}
-        <div className="bg-gradient-to-br from-green-500 to-green-700 p-8 md:p-10 text-center text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-4 -translate-y-4">
+        {/* Header — Total CO2 */}
+        <div
+          className="bg-gradient-to-br from-green-500 to-green-700 p-8 md:p-10 text-center text-white relative overflow-hidden"
+          aria-label={`Estimated daily carbon footprint: ${total_co2_kg.toFixed(1)} kilograms of CO2`}
+        >
+          <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-4 -translate-y-4" aria-hidden="true">
             <Target size={160} />
           </div>
           <h3 className="text-green-100 font-bold tracking-widest uppercase text-xs mb-3 relative z-10">
@@ -114,28 +130,27 @@ const InsightsDashboard = ({ data, isLoading }) => {
         </div>
 
         <div className="p-8 md:p-10">
+
           {/* Category Breakdown */}
-          <h4 className="text-gray-900 font-extrabold text-xl mb-8">
-            Emission Breakdown
-          </h4>
+          <h4 className="text-gray-900 font-extrabold text-xl mb-8">Emission Breakdown</h4>
 
           <div className="space-y-7">
             <CategoryRow
-              icon={<Car size={20} />}
+              icon={<Car size={20} aria-hidden="true" />}
               label="Transportation"
               value={category_breakdown.transportation}
               percentage={getPercentage(category_breakdown.transportation)}
               color="bg-blue-500"
             />
             <CategoryRow
-              icon={<Utensils size={20} />}
+              icon={<Utensils size={20} aria-hidden="true" />}
               label="Food"
               value={category_breakdown.food}
               percentage={getPercentage(category_breakdown.food)}
               color="bg-orange-400"
             />
             <CategoryRow
-              icon={<Zap size={20} />}
+              icon={<Zap size={20} aria-hidden="true" />}
               label="Energy"
               value={category_breakdown.energy}
               percentage={getPercentage(category_breakdown.energy)}
@@ -143,18 +158,24 @@ const InsightsDashboard = ({ data, isLoading }) => {
             />
           </div>
 
-          {/* AI Suggestions Section */}
+          {/* AI Suggestions */}
           <div className="mt-10 pt-10 border-t border-gray-100">
             <div className="bg-amber-50/60 rounded-3xl p-6 border border-amber-200/50 flex flex-col md:flex-row items-start gap-5">
-              <div className="p-3 bg-amber-100 text-amber-700 shrink-0 mt-1 shadow-sm rounded-2xl">
+              <div className="p-3 bg-amber-100 text-amber-700 shrink-0 mt-1 shadow-sm rounded-2xl" aria-hidden="true">
                 <Lightbulb size={24} />
               </div>
               <div className="flex-1 w-full">
-                <h4 className="font-extrabold text-amber-900 mb-4 text-lg">AI Insights & Suggestions</h4>
-                <ul className="space-y-3">
+                <h4 className="font-extrabold text-amber-900 mb-4 text-lg">AI Insights &amp; Suggestions</h4>
+                <ul className="space-y-3" aria-label="AI-generated suggestions">
                   {suggestions.map((suggestion, idx) => (
-                    <li key={idx} className="flex items-start gap-3 text-amber-900 leading-relaxed text-sm bg-white/80 p-4 rounded-xl border border-amber-100/50 shadow-xs">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-600 text-white text-xs font-black shadow-xs">
+                    <li
+                      key={idx}
+                      className="flex items-start gap-3 text-amber-900 leading-relaxed text-sm bg-white/80 p-4 rounded-xl border border-amber-100/50 shadow-xs"
+                    >
+                      <span
+                        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-amber-600 text-white text-xs font-black shadow-xs"
+                        aria-hidden="true"
+                      >
                         {idx + 1}
                       </span>
                       <span className="pt-0.5">{suggestion}</span>
@@ -165,10 +186,10 @@ const InsightsDashboard = ({ data, isLoading }) => {
             </div>
           </div>
 
-          {/* Interactive To-Do List Section */}
+          {/* Interactive Micro-Goals */}
           <div className="mt-8 pt-8 border-t border-gray-100">
             <div className="bg-green-50/80 rounded-3xl p-6 border border-green-200/60 flex flex-col md:flex-row items-start gap-5">
-              <div className="p-3 bg-green-200/80 rounded-2xl text-green-700 shrink-0 mt-1 shadow-sm">
+              <div className="p-3 bg-green-200/80 rounded-2xl text-green-700 shrink-0 mt-1 shadow-sm" aria-hidden="true">
                 <ClipboardList size={24} />
               </div>
               <div className="flex-1 w-full">
@@ -183,6 +204,7 @@ const InsightsDashboard = ({ data, isLoading }) => {
                         }
                       `}
                       aria-live="polite"
+                      aria-atomic="true"
                     >
                       {completedCount === totalCount && totalCount > 0
                         ? `${completedCount}/${totalCount} Steps Completed! 🎉 Excellent job reducing your footprint today!`
@@ -190,15 +212,24 @@ const InsightsDashboard = ({ data, isLoading }) => {
                       }
                     </span>
                   </div>
+
                   {totalCount > 0 && (
-                    <div className="w-full bg-green-200/40 rounded-full h-1.5 overflow-hidden">
+                    <div
+                      role="progressbar"
+                      aria-valuenow={progressPercent}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={`${completedCount} of ${totalCount} micro-goals completed`}
+                      className="w-full bg-green-200/40 rounded-full h-1.5 overflow-hidden"
+                    >
                       <div
                         className="bg-green-700 h-1.5 rounded-full transition-all duration-500 ease-out"
-                        style={{ width: `${(completedCount / totalCount) * 100}%` }}
+                        style={{ width: `${progressPercent}%` }}
                       ></div>
                     </div>
                   )}
                 </div>
+
                 <ul className="space-y-3" aria-label="Micro-Goals checklist">
                   {tasks.map((task) => (
                     <ChecklistRow
@@ -211,12 +242,32 @@ const InsightsDashboard = ({ data, isLoading }) => {
               </div>
             </div>
           </div>
-        </div>
 
+        </div>
       </div>
     </div>
   );
 };
+
+InsightsDashboard.propTypes = {
+  /** The analysis data returned by the API. Null while loading. */
+  data: PropTypes.shape({
+    total_co2_kg: PropTypes.number.isRequired,
+    category_breakdown: PropTypes.shape({
+      transportation: PropTypes.number.isRequired,
+      food: PropTypes.number.isRequired,
+      energy: PropTypes.number.isRequired,
+    }).isRequired,
+    suggestions: PropTypes.arrayOf(PropTypes.string),
+    todo_list: PropTypes.arrayOf(PropTypes.string),
+  }),
+  /** Whether the API request is in-flight. */
+  isLoading: PropTypes.bool.isRequired,
+};
+
+// ---------------------------------------------------------------------------
+// ChecklistRow
+// ---------------------------------------------------------------------------
 
 const ChecklistRow = ({ task, onToggle }) => {
   const handleKeyDown = (e) => {
@@ -240,7 +291,7 @@ const ChecklistRow = ({ task, onToggle }) => {
         }
       `}
     >
-      <div className="flex items-center justify-center shrink-0 mt-0.5">
+      <div className="flex items-center justify-center shrink-0 mt-0.5" aria-hidden="true">
         <div
           className={`h-5 w-5 rounded-md border flex items-center justify-center transition-all
             ${task.completed
@@ -258,6 +309,7 @@ const ChecklistRow = ({ task, onToggle }) => {
               strokeWidth={4}
               strokeLinecap="round"
               strokeLinejoin="round"
+              aria-hidden="true"
             >
               <polyline points="20 6 9 17 4 12" />
             </svg>
@@ -278,6 +330,19 @@ const ChecklistRow = ({ task, onToggle }) => {
   );
 };
 
+ChecklistRow.propTypes = {
+  task: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    text: PropTypes.string.isRequired,
+    completed: PropTypes.bool.isRequired,
+  }).isRequired,
+  onToggle: PropTypes.func.isRequired,
+};
+
+// ---------------------------------------------------------------------------
+// CategoryRow
+// ---------------------------------------------------------------------------
+
 const CategoryRow = ({ icon, label, value, percentage, color }) => (
   <div className="flex flex-col gap-2.5">
     <div className="flex items-center justify-between text-base">
@@ -287,7 +352,14 @@ const CategoryRow = ({ icon, label, value, percentage, color }) => (
       </div>
       <span className="font-bold text-gray-900">{value.toFixed(1)} kg</span>
     </div>
-    <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
+    <div
+      role="progressbar"
+      aria-valuenow={Math.round(percentage)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={`${label}: ${value.toFixed(1)} kg CO2`}
+      className="w-full bg-gray-100 rounded-full h-3 overflow-hidden"
+    >
       <div
         className={`h-3 rounded-full ${color} transition-all duration-1000 ease-out`}
         style={{ width: `${percentage}%` }}
@@ -295,5 +367,13 @@ const CategoryRow = ({ icon, label, value, percentage, color }) => (
     </div>
   </div>
 );
+
+CategoryRow.propTypes = {
+  icon: PropTypes.element.isRequired,
+  label: PropTypes.string.isRequired,
+  value: PropTypes.number.isRequired,
+  percentage: PropTypes.number.isRequired,
+  color: PropTypes.string.isRequired,
+};
 
 export default InsightsDashboard;
