@@ -70,6 +70,10 @@ JSON SCHEMA:
 # Maximum tokens to prevent runaway API responses
 _MAX_OUTPUT_TOKENS = 1024
 
+# Model strategy: primary is tried first; backup is used if the primary fails
+_PRIMARY_MODEL = "gemini-3.5-flash"
+_BACKUP_MODEL = "gemini-3.1-flash-lite"
+
 
 async def analyze_activity(user_input: str) -> AnalyzeData:
     """Analyze the user's daily activity and return an estimated CO2 breakdown.
@@ -91,17 +95,27 @@ async def analyze_activity(user_input: str) -> AnalyzeData:
     if not user_input or not user_input.strip():
         raise ValueError("user_input must not be empty.")
 
-    response = await _client.aio.models.generate_content(
-        model="gemini-2.0-flash-lite",
-        contents=user_input,
-        config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
-            temperature=0.0,  # Enforces deterministic math calculations
-            response_mime_type="application/json",
-            response_schema=AnalyzeData.model_json_schema(),
-            max_output_tokens=_MAX_OUTPUT_TOKENS,
-        ),
+    _generate_config = types.GenerateContentConfig(
+        system_instruction=SYSTEM_PROMPT,
+        temperature=0.0,  # Enforces deterministic math calculations
+        response_mime_type="application/json",
+        response_schema=AnalyzeData.model_json_schema(),
+        max_output_tokens=_MAX_OUTPUT_TOKENS,
     )
+
+    # Try the primary model; fall back to the backup on any failure
+    try:
+        response = await _client.aio.models.generate_content(
+            model=_PRIMARY_MODEL,
+            contents=user_input,
+            config=_generate_config,
+        )
+    except Exception:
+        response = await _client.aio.models.generate_content(
+            model=_BACKUP_MODEL,
+            contents=user_input,
+            config=_generate_config,
+        )
 
     try:
         if response.parsed:
