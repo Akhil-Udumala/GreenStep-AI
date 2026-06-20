@@ -7,7 +7,7 @@ const InsightsDashboard = ({ data, isLoading }) => {
     return (
       <div className="w-full max-w-2xl mx-auto animate-in fade-in duration-300">
         <div className="bg-white rounded-3xl shadow-xl border border-green-50 overflow-hidden animate-pulse">
-          
+
           {/* Skeleton Header */}
           <div className="bg-green-100 p-8 flex flex-col items-center justify-center min-h-[200px]">
             <div className="h-4 bg-green-200/60 rounded w-48 mb-6"></div>
@@ -50,13 +50,13 @@ const InsightsDashboard = ({ data, isLoading }) => {
 
   // 3. Results State
   const { total_co2_kg, category_breakdown, suggestions = [], todo_list = [] } = data;
-  
+
   const maxCategory = Math.max(
     category_breakdown.transportation,
     category_breakdown.food,
     category_breakdown.energy
   );
-  
+
   const getPercentage = (value) => maxCategory > 0 ? (value / maxCategory) * 100 : 0;
 
   // Local state for interactive tasks
@@ -98,7 +98,7 @@ const InsightsDashboard = ({ data, isLoading }) => {
   return (
     <div className="w-full max-w-2xl mx-auto animate-in slide-in-from-bottom-8 fade-in duration-700 ease-out">
       <div className="bg-white rounded-3xl shadow-2xl shadow-green-900/10 border border-green-100 overflow-hidden">
-        
+
         {/* Header - Total CO2 */}
         <div className="bg-gradient-to-br from-green-500 to-green-700 p-8 md:p-10 text-center text-white relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-4 -translate-y-4">
@@ -118,26 +118,26 @@ const InsightsDashboard = ({ data, isLoading }) => {
           <h4 className="text-gray-900 font-extrabold text-xl mb-8">
             Emission Breakdown
           </h4>
-          
+
           <div className="space-y-7">
-            <CategoryRow 
-              icon={<Car size={20} />} 
-              label="Transportation" 
-              value={category_breakdown.transportation} 
+            <CategoryRow
+              icon={<Car size={20} />}
+              label="Transportation"
+              value={category_breakdown.transportation}
               percentage={getPercentage(category_breakdown.transportation)}
               color="bg-blue-500"
             />
-            <CategoryRow 
-              icon={<Utensils size={20} />} 
-              label="Food" 
-              value={category_breakdown.food} 
+            <CategoryRow
+              icon={<Utensils size={20} />}
+              label="Food"
+              value={category_breakdown.food}
               percentage={getPercentage(category_breakdown.food)}
               color="bg-orange-400"
             />
-            <CategoryRow 
-              icon={<Zap size={20} />} 
-              label="Energy" 
-              value={category_breakdown.energy} 
+            <CategoryRow
+              icon={<Zap size={20} />}
+              label="Energy"
+              value={category_breakdown.energy}
               percentage={getPercentage(category_breakdown.energy)}
               color="bg-yellow-400"
             />
@@ -174,8 +174,8 @@ const InsightsDashboard = ({ data, isLoading }) => {
               <div className="flex-1 w-full">
                 <div className="mb-6">
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-3">
-                    <h4 className="font-extrabold text-green-900 text-lg shrink-0">Your Interactive To-Do List</h4>
-                    <span 
+                    <h4 className="font-extrabold text-green-900 text-lg shrink-0">Micro Goals</h4>
+                    <span
                       className={`text-xs font-extrabold px-3.5 py-1.5 rounded-xl select-none transition-all duration-300 shadow-xs leading-normal
                         ${completedCount === totalCount && totalCount > 0
                           ? 'bg-green-700 text-white ring-4 ring-green-600/20 animate-in zoom-in-95 duration-300'
@@ -192,8 +192,8 @@ const InsightsDashboard = ({ data, isLoading }) => {
                   </div>
                   {totalCount > 0 && (
                     <div className="w-full bg-green-200/40 rounded-full h-1.5 overflow-hidden">
-                      <div 
-                        className="bg-green-700 h-1.5 rounded-full transition-all duration-500 ease-out" 
+                      <div
+                        className="bg-green-700 h-1.5 rounded-full transition-all duration-500 ease-out"
                         style={{ width: `${(completedCount / totalCount) * 100}%` }}
                       ></div>
                     </div>
@@ -201,10 +201,10 @@ const InsightsDashboard = ({ data, isLoading }) => {
                 </div>
                 <ul className="space-y-3" aria-label="Micro-Goals checklist">
                   {tasks.map((task) => (
-                    <ChecklistRow 
-                      key={task.id} 
-                      task={task} 
-                      onToggle={() => handleToggleTask(task.id)} 
+                    <ChecklistRow
+                      key={task.id}
+                      task={task}
+                      onToggle={() => handleToggleTask(task.id)}
                     />
                   ))}
                 </ul>
@@ -227,33 +227,33 @@ const ChecklistRow = ({ task, onToggle }) => {
   };
 
   return (
-    <li 
+    <li
       onClick={onToggle}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="checkbox"
       aria-checked={task.completed}
       className={`flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer select-none focus:outline-none focus:ring-2 focus:ring-green-600 focus:ring-offset-2
-        ${task.completed 
-          ? 'bg-green-100/30 border-green-200/40 opacity-70' 
+        ${task.completed
+          ? 'bg-green-100/30 border-green-200/40 opacity-70'
           : 'bg-white border-green-100/80 hover:bg-green-50/20 hover:border-green-200/50 hover:shadow-md'
         }
       `}
     >
       <div className="flex items-center justify-center shrink-0 mt-0.5">
-        <div 
+        <div
           className={`h-5 w-5 rounded-md border flex items-center justify-center transition-all
-            ${task.completed 
-              ? 'bg-green-700 border-green-700 text-white shadow-xs' 
+            ${task.completed
+              ? 'bg-green-700 border-green-700 text-white shadow-xs'
               : 'border-green-700/60 bg-white hover:border-green-700'
             }
           `}
         >
           {task.completed && (
-            <svg 
-              className="h-3 w-3 text-white" 
-              viewBox="0 0 24 24" 
-              fill="none" 
+            <svg
+              className="h-3 w-3 text-white"
+              viewBox="0 0 24 24"
+              fill="none"
               stroke="currentColor"
               strokeWidth={4}
               strokeLinecap="round"
@@ -264,10 +264,10 @@ const ChecklistRow = ({ task, onToggle }) => {
           )}
         </div>
       </div>
-      <span 
+      <span
         className={`text-sm leading-relaxed transition-all
-          ${task.completed 
-            ? 'line-through text-green-700/80 font-medium' 
+          ${task.completed
+            ? 'line-through text-green-700/80 font-medium'
             : 'text-green-800'
           }
         `}
@@ -288,8 +288,8 @@ const CategoryRow = ({ icon, label, value, percentage, color }) => (
       <span className="font-bold text-gray-900">{value.toFixed(1)} kg</span>
     </div>
     <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
-      <div 
-        className={`h-3 rounded-full ${color} transition-all duration-1000 ease-out`} 
+      <div
+        className={`h-3 rounded-full ${color} transition-all duration-1000 ease-out`}
         style={{ width: `${percentage}%` }}
       ></div>
     </div>
