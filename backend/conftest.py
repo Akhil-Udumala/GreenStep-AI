@@ -6,7 +6,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from main import app
-from models import AnalyzeData, CategoryBreakdown
+from models import ActionPlanItem, AnalyzeData, CategoryBreakdown
 
 
 @pytest.fixture
@@ -25,6 +25,11 @@ def mock_analyze_data():
             food=1.5,
             energy=0.9,
         ),
-        suggestions=["Consider using public transit to lower your emissions."],
-        todo_list=["Take the bus to work tomorrow."],
+        action_plan=[
+            ActionPlanItem(
+                category="transportation",
+                suggestion="Consider using public transit to lower your emissions.",
+                todo_item="Take the bus to work tomorrow.",
+            ),
+        ],
     )

@@ -78,8 +78,8 @@ def test_analyze_endpoint_success(mock_analyze, client, mock_analyze_data):
     assert json_data["success"] is True
     assert json_data["data"]["total_co2_kg"] == pytest.approx(4.5)
     assert json_data["data"]["category_breakdown"]["transportation"] == pytest.approx(2.1)
-    assert len(json_data["data"]["suggestions"]) == 1
-    assert len(json_data["data"]["todo_list"]) == 1
+    assert len(json_data["data"]["action_plan"]) == 1
+    assert json_data["data"]["action_plan"][0]["category"] == "transportation"
 
 
 @patch("main.analyze_activity", new_callable=AsyncMock)

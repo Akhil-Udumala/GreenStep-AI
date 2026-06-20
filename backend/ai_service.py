@@ -71,8 +71,8 @@ JSON SCHEMA:
 _MAX_OUTPUT_TOKENS = 1024
 
 # Model strategy: primary is tried first; backup is used if the primary fails
-_PRIMARY_MODEL = "gemini-3.5-flash"      # Latest flash model
-_BACKUP_MODEL = "gemini-3.1-flash-lite"  # Stable fallback
+_PRIMARY_MODEL = "gemini-3.5-flash"      # Latest flash model (API ID)
+_BACKUP_MODEL = "gemini-3.1-flash-lite"  # Stable fallback (API ID)
 
 
 async def analyze_activity(user_input: str) -> AnalyzeData:

@@ -48,13 +48,9 @@ class AnalyzeData(BaseModel):
         ..., ge=0, description="Total estimated CO2 equivalent emissions in kilograms"
     )
     category_breakdown: CategoryBreakdown
-    suggestions: list[str] = Field(
+    action_plan: list[ActionPlanItem] = Field(
         ...,
-        description="A list of 1–3 broad personalized educational suggestions based on the activity logs.",
-    )
-    todo_list: list[str] = Field(
-        ...,
-        description="A list of 1–3 highly actionable, concrete, short daily to-do items for tomorrow.",
+        description="A list of actionable items, one per non-zero emission category.",
     )
 
 

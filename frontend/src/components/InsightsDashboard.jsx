@@ -14,22 +14,21 @@ const InsightsDashboard = ({ data, isLoading }) => {
   // Local state for the interactive to-do checklist
   const [tasks, setTasks] = useState([]);
 
-  // Derive todo_list safely before the conditional returns
-  const todoList = data?.todo_list ?? [];
+  // Derive action_plan safely before the conditional returns
+  const actionPlan = data?.action_plan ?? [];
 
   useEffect(() => {
-    if (!todoList || todoList.length === 0) {
+    if (!actionPlan || actionPlan.length === 0) {
       setTasks([]);
       return;
     }
-    const parsed = todoList
-      .map((line) => {
-        // Strip leading/trailing markdown bullet characters and whitespace
-        const cleaned = line.replace(/^[-*\s]+/, '').replace(/[-*\s]+$/, '').trim();
-        return cleaned;
-      })
-      .filter((text) => text.length > 0)
-      .map((text, idx) => ({ id: `${idx}-${text}`, text, completed: false }));
+    const parsed = actionPlan
+      .filter((item) => item.todo_item && item.todo_item.trim().length > 0)
+      .map((item, idx) => ({
+        id: `${idx}-${item.category}`,
+        text: item.todo_item.trim(),
+        completed: false,
+      }));
     setTasks(parsed);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
@@ -94,7 +93,7 @@ const InsightsDashboard = ({ data, isLoading }) => {
   if (!data) return null;
 
   // 3. Results
-  const { total_co2_kg, category_breakdown, suggestions = [] } = data;
+  const { total_co2_kg, category_breakdown, action_plan = [] } = data;
 
   const maxCategory = Math.max(
     category_breakdown.transportation,
@@ -167,7 +166,7 @@ const InsightsDashboard = ({ data, isLoading }) => {
               <div className="flex-1 w-full">
                 <h4 className="font-extrabold text-amber-900 mb-4 text-lg">AI Insights &amp; Suggestions</h4>
                 <ul className="space-y-3" aria-label="AI-generated suggestions">
-                  {suggestions.map((suggestion, idx) => (
+                  {action_plan.map((item, idx) => (
                     <li
                       key={idx}
                       className="flex items-start gap-3 text-amber-900 leading-relaxed text-sm bg-white/80 p-4 rounded-xl border border-amber-100/50 shadow-xs"
@@ -178,7 +177,7 @@ const InsightsDashboard = ({ data, isLoading }) => {
                       >
                         {idx + 1}
                       </span>
-                      <span className="pt-0.5">{suggestion}</span>
+                      <span className="pt-0.5">{item.suggestion}</span>
                     </li>
                   ))}
                 </ul>
@@ -258,8 +257,13 @@ InsightsDashboard.propTypes = {
       food: PropTypes.number.isRequired,
       energy: PropTypes.number.isRequired,
     }).isRequired,
-    suggestions: PropTypes.arrayOf(PropTypes.string),
-    todo_list: PropTypes.arrayOf(PropTypes.string),
+    action_plan: PropTypes.arrayOf(
+      PropTypes.shape({
+        category: PropTypes.string.isRequired,
+        suggestion: PropTypes.string.isRequired,
+        todo_item: PropTypes.string.isRequired,
+      })
+    ),
   }),
   /** Whether the API request is in-flight. */
   isLoading: PropTypes.bool.isRequired,
