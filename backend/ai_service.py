@@ -71,7 +71,7 @@ JSON SCHEMA:
 _MAX_OUTPUT_TOKENS = 1024
 
 # Single model — confirmed working in production
-_MODEL = "gemini-3.1-flash-lite"
+_MODEL = "gemini-3.5-flash"
 
 
 async def analyze_activity(user_input: str) -> AnalyzeData:
