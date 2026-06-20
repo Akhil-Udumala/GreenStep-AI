@@ -380,4 +380,4 @@ CategoryRow.propTypes = {
   color: PropTypes.string.isRequired,
 };
 
-export default InsightsDashboard;
+export default React.memo(InsightsDashboard);

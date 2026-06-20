@@ -5,14 +5,22 @@ Exposes REST endpoints for analyzing daily activity descriptions
 and returning estimated carbon footprint data.
 """
 
+import logging
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler  # pyrefly: ignore[missing-import]
 from slowapi.errors import RateLimitExceeded  # pyrefly: ignore[missing-import]
 from slowapi.util import get_remote_address  # pyrefly: ignore[missing-import]
 
 from ai_service import analyze_activity
 from models import AnalyzeData, AnalyzeRequest, AnalyzeResponse
+
+# ---------------------------------------------------------------------------
+# Logging configuration
+# ---------------------------------------------------------------------------
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Rate limiter — prevents abuse; 10 requests/minute per IP
@@ -33,7 +41,7 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ---------------------------------------------------------------------------
-# CORS
+# Middleware
 # ---------------------------------------------------------------------------
 _ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -51,6 +59,8 @@ app.add_middleware(
     allow_headers=["Content-Type"],
 )
 
+# Compresses responses for better network efficiency
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 # ---------------------------------------------------------------------------
 # Endpoints
@@ -98,12 +108,14 @@ async def analyze_endpoint(request: Request, body: AnalyzeRequest):
     """
     user_input = body.user_input.strip()
     if not user_input:
+        logger.warning("Empty user input provided to /api/analyze")
         raise HTTPException(status_code=422, detail="User input cannot be empty.")
 
     try:
         data: AnalyzeData = await analyze_activity(user_input)
         return AnalyzeResponse(success=True, data=data)
-    except Exception:
+    except Exception as e:
+        logger.error(f"Error during activity analysis: {str(e)}", exc_info=True)
         # Intentionally do not expose internal error details to the client
         raise HTTPException(
             status_code=500,

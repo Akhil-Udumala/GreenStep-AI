@@ -4,11 +4,13 @@ AI service module for GreenStep AI.
 Manages the Gemini API client lifecycle and provides the core
 `analyze_activity` coroutine used by the FastAPI endpoint.
 The client is initialized once at module load time to avoid
-per-request overhead.
+per-request overhead. Responses are cached for efficiency.
 """
 
 import json
+import logging
 import os
+from collections import OrderedDict
 
 # pyrefly: ignore[missing-import]
 from dotenv import load_dotenv
@@ -20,10 +22,16 @@ from models import AnalyzeData
 load_dotenv()
 
 # ---------------------------------------------------------------------------
+# Logging configuration
+# ---------------------------------------------------------------------------
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
 # Client & configuration — initialized once at module load time
 # ---------------------------------------------------------------------------
 _api_key = os.getenv("GEMINI_API_KEY")
 if not _api_key:
+    logger.error("GEMINI_API_KEY environment variable not set")
     raise RuntimeError("GEMINI_API_KEY environment variable not set")
 
 _client = genai.Client(api_key=_api_key)
@@ -73,12 +81,19 @@ _MAX_OUTPUT_TOKENS = 1024
 # Single model — confirmed working in production
 _MODEL = "gemini-3.1-flash-lite"
 
+# ---------------------------------------------------------------------------
+# In-memory Cache for Efficiency
+# ---------------------------------------------------------------------------
+_CACHE_SIZE_LIMIT = 500
+_response_cache: OrderedDict[str, AnalyzeData] = OrderedDict()
+
 
 async def analyze_activity(user_input: str) -> AnalyzeData:
     """Analyze the user's daily activity and return an estimated CO2 breakdown.
 
     Uses the shared async Gemini client initialized at module load time for
     maximum performance — no per-request client instantiation overhead.
+    Caches responses to avoid redundant API calls.
 
     Args:
         user_input: A plain-text description of the user's daily activities.
@@ -91,8 +106,17 @@ async def analyze_activity(user_input: str) -> AnalyzeData:
         ValueError: If ``user_input`` is empty after stripping whitespace.
         RuntimeError: If the Gemini response cannot be parsed into the expected schema.
     """
-    if not user_input or not user_input.strip():
+    clean_input = user_input.strip()
+    if not clean_input:
+        logger.warning("analyze_activity called with empty input.")
         raise ValueError("user_input must not be empty.")
+
+    cache_key = clean_input.lower()
+    if cache_key in _response_cache:
+        logger.info("Returning cached analysis for input.")
+        # Move to end to mark as recently used (LRU)
+        _response_cache.move_to_end(cache_key)
+        return _response_cache[cache_key]
 
     _generate_config = types.GenerateContentConfig(
         system_instruction=SYSTEM_PROMPT,
@@ -102,18 +126,32 @@ async def analyze_activity(user_input: str) -> AnalyzeData:
         max_output_tokens=_MAX_OUTPUT_TOKENS,
     )
 
-    response = await _client.aio.models.generate_content(
-        model=_MODEL,
-        contents=user_input,
-        config=_generate_config,
-    )
+    try:
+        logger.info("Calling Gemini API for analysis.")
+        response = await _client.aio.models.generate_content(
+            model=_MODEL,
+            contents=clean_input,
+            config=_generate_config,
+        )
+    except Exception as e:
+        logger.error(f"Gemini API call failed: {e}", exc_info=True)
+        raise RuntimeError("Failed to communicate with the Gemini API") from e
 
     try:
         if response.parsed:
-            return AnalyzeData.model_validate(response.parsed)
-        data_dict = json.loads(response.text)
-        return AnalyzeData(**data_dict)
+            data = AnalyzeData.model_validate(response.parsed)
+        else:
+            data_dict = json.loads(response.text)
+            data = AnalyzeData(**data_dict)
+            
+        # Add to cache, maintaining size limit
+        _response_cache[cache_key] = data
+        if len(_response_cache) > _CACHE_SIZE_LIMIT:
+            _response_cache.popitem(last=False)  # pop least recently used
+            
+        return data
     except Exception as e:
+        logger.error(f"Failed to parse Gemini response: {response.text}", exc_info=True)
         raise RuntimeError(
             f"Failed to parse Gemini response: {response.text}"
         ) from e

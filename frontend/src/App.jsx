@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import LogActivityForm from './components/LogActivityForm';
 import InsightsDashboard from './components/InsightsDashboard';
 import { analyzeActivity } from './api/analyze';
@@ -27,14 +27,19 @@ function App() {
       setError(err.message || 'An unexpected error occurred.');
     } finally {
       setIsLoading(false);
-      // Wait for React to finish rendering the results component before scrolling
-      setTimeout(() => {
-        if (resultsRef.current) {
-          slowSmoothScrollTo(resultsRef.current, 1200);
-        }
-      }, 100);
     }
   }, []);
+
+  // Use an effect to scroll only after data successfully loads
+  useEffect(() => {
+    if (insightsData && resultsRef.current) {
+      // Use a minimal timeout just to ensure DOM is fully painted
+      const timer = setTimeout(() => {
+        slowSmoothScrollTo(resultsRef.current, 1200);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [insightsData]);
 
   return (
     <div className="min-h-screen py-16 px-4 sm:px-6 lg:px-8 font-sans selection:bg-green-200">

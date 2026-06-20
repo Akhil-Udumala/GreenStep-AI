@@ -87,4 +87,4 @@ LogActivityForm.propTypes = {
   isLoading: PropTypes.bool.isRequired,
 };
 
-export default LogActivityForm;
+export default React.memo(LogActivityForm);
