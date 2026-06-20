@@ -111,7 +111,22 @@ async def analyze_activity(user_input: str) -> AnalyzeData:
     try:
         if response.parsed:
             return AnalyzeData.model_validate(response.parsed)
-        data_dict = json.loads(response.text)
+            
+        raw_text = response.text.strip()
+        try:
+            data_dict = json.loads(raw_text)
+        except json.JSONDecodeError:
+            cleaned_text = raw_text
+            if cleaned_text.startswith("```"):
+                # Remove opening line (e.g., ```json or ```)
+                cleaned_text = "\n".join(cleaned_text.split("\n")[1:])
+            if cleaned_text.endswith("```"):
+                # Remove closing backticks
+                cleaned_text = cleaned_text.rsplit("```", 1)[0]
+            
+            cleaned_text = cleaned_text.strip()
+            data_dict = json.loads(cleaned_text)
+
         return AnalyzeData(**data_dict)
     except Exception as e:
         raise RuntimeError(
