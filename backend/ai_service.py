@@ -70,9 +70,8 @@ JSON SCHEMA:
 # Maximum tokens to prevent runaway API responses
 _MAX_OUTPUT_TOKENS = 1024
 
-# Model strategy: primary is tried first; backup is used if the primary fails
-_PRIMARY_MODEL = "gemini-3.5-flash"      # Latest flash model (API ID)
-_BACKUP_MODEL = "gemini-3.1-flash-lite"  # Stable fallback (API ID)
+# Single model — confirmed working in production
+_MODEL = "gemini-3.1-flash-lite"
 
 
 async def analyze_activity(user_input: str) -> AnalyzeData:
@@ -86,7 +85,7 @@ async def analyze_activity(user_input: str) -> AnalyzeData:
 
     Returns:
         An ``AnalyzeData`` instance containing the total CO2 estimate,
-        per-category breakdown, educational suggestions, and a to-do list.
+        per-category breakdown, and an action plan.
 
     Raises:
         ValueError: If ``user_input`` is empty after stripping whitespace.
@@ -103,19 +102,11 @@ async def analyze_activity(user_input: str) -> AnalyzeData:
         max_output_tokens=_MAX_OUTPUT_TOKENS,
     )
 
-    # Try the primary model; fall back to the backup on any failure
-    try:
-        response = await _client.aio.models.generate_content(
-            model=_PRIMARY_MODEL,
-            contents=user_input,
-            config=_generate_config,
-        )
-    except Exception:
-        response = await _client.aio.models.generate_content(
-            model=_BACKUP_MODEL,
-            contents=user_input,
-            config=_generate_config,
-        )
+    response = await _client.aio.models.generate_content(
+        model=_MODEL,
+        contents=user_input,
+        config=_generate_config,
+    )
 
     try:
         if response.parsed:
